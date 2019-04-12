@@ -22,25 +22,7 @@ resource "aws_iam_role" "main" {
 EOF
 }
 
-// this is bad example
-resource "aws_iam_policy" "bad_policy" {
-  name = "${var.name}_codepipeline_policy"
-
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "*",
-      "Resource": "*"
-    }
-  ]
-}
-EOF
-}
-
-resource "aws_iam_role_policy_attachment" "main" {
+resource "aws_iam_role_policy_attachment" "CodePipelineFullAccess" {
   role       = "${aws_iam_role.main.id}"
-  policy_arn = "${aws_iam_policy.bad_policy.arn}"
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodePipelineFullAccess"
 }

@@ -5,7 +5,7 @@ resource "aws_s3_bucket" "artifact_store" {
 
 # Code Pipeline
 resource "aws_codepipeline" "main" {
-  name     = "${var.name}_build_docker_pipeline"
+  name     = "${replace(var.name, ".", "")}_build_docker_pipeline"
   role_arn = "${aws_iam_role.pipeline.arn}"
 
   artifact_store {
@@ -20,7 +20,8 @@ resource "aws_codepipeline" "main" {
       name             = "Source"
       category         = "Source"
       owner            = "AWS"
-      prividor         = "CodeCommit"
+      version          = "1"
+      providor         = "CodeCommit"
       output_artifacts = ["commited_data"]
 
       configuration {
@@ -108,8 +109,8 @@ resource "aws_codebuild_project" "build_docker" {
   }
 
   environment {
-    compute_type = "BUILD_GENERAL1_MEDIUM"
-    compute_image = "aws/codebuild/docker:17.09.0"
+    compute_type    = "BUILD_GENERAL1_MEDIUM"
+    image           = "aws/codebuild/docker:17.09.0"
     type            = "LINUX_CONTAINER"
     privileged_mode = true
   }

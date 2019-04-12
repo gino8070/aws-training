@@ -3,6 +3,6 @@ provider "aws" {
 }
 
 module "ecr" {
-  source      = "github.com/gino8070/aws-training//terraform_modules/ecr"
-  name        = ""
+  source = "github.com/gino8070/aws-training//terraform_modules/ecr"
+  name   = "${var.name}"
 }

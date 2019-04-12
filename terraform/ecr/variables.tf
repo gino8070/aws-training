@@ -1,4 +1,4 @@
-variables "name" {
+variable "name" {
   type    = "string"
   default = ""
 }

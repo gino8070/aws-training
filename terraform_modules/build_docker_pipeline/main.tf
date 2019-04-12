@@ -100,11 +100,18 @@ resource "aws_iam_role_policy_attachment" "CodeBuildAdminAccess" {
 resource "aws_codebuild_project" "build_docker" {
   name          = "${var.name}_build_docker"
   description   = "${var.name}_build_docker"
-  build_timeout = "3600"
+  build_timeout = "10"
   service_role  = "${aws_iam_role.build.arn}"
 
   artifacts {
     type = "CODEPIPELINE"
+  }
+
+  environment {
+    compute_type = "BUILD_GENERAL1_MEDIUM"
+    compute_image = "aws/codebuild/docker:17.09.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = true
   }
 
   source {
@@ -113,9 +120,18 @@ resource "aws_codebuild_project" "build_docker" {
     buildspec = <<EOF
 version: 0.2
 phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - echo docker pull $REPOSITORY_URI:latest
+      - docker pull $REPOSITORY_URI:latest || true
   build:
     commands:
-      - make
+      - echo Build started on `date`
+      - docker build --cache-from $REPOSITORY_URI:latest -t $REPOSITORY_URI:latest .
+      - docker push $REPOSITORY_URI:latest
 EOF
   }
 }

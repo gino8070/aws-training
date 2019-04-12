@@ -1,7 +1,7 @@
-resource "aws_codepipeline" "main" {
-  name     = "${var.name}"
-  role_arn = "${aws_iam_role.main.arn}"
-}
+#resource "aws_codepipeline" "main" {
+#  name     = "${var.name}"
+#  role_arn = "${aws_iam_role.main.arn}"
+#}
 
 resource "aws_iam_role" "main" {
   name = "${var.name}_codepipeline_role"

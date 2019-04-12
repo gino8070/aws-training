@@ -1,6 +1,6 @@
 resource "aws_codepipeline" "main" {
   name     = "${var.name}"
-  role_arn = "${aws_iam_role.arn}"
+  role_arn = "${aws_iam_role.main.arn}"
 }
 
 resource "aws_iam_role" "main" {
@@ -41,6 +41,6 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "main" {
-  role_arn   = "${aws_iam_role.id}"
+  role_arn   = "${aws_iam_role.main.id}"
   policy_arn = "${aws_iam_policy.bad_policy.arn}"
 }

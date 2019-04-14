@@ -12,3 +12,8 @@ variable "branchName" {
   type    = "string"
   default = ""
 }
+
+variable "serviceName" {
+  type    = "string"
+  default = ""
+}

@@ -38,18 +38,37 @@ resource "aws_codepipeline" "main" {
     name = "BuildDockerImage"
 
     action {
-      name            = "Build"
-      category        = "Build"
-      owner           = "AWS"
-      provider        = "CodeBuild"
-      version         = "1"
-      input_artifacts = ["commited_data"]
+      name             = "Build"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      version          = "1"
+      input_artifacts  = ["commited_data"]
+      output_artifacts = ["builded_data"]
 
       configuration {
         ProjectName = "${aws_codebuild_project.build_docker.id}"
       }
     }
   }
+
+  #stage {
+  #  name = "DeployECS"
+
+  #  action {
+  #    name            = "Deploy"
+  #    category        = "Deploy"
+  #    owner           = "AWS"
+  #    provider        = "ECS"
+  #    version         = "1"
+  #    input_artifacts = ["builded_data"]
+
+  #    configuration {
+  #      ClusterName = "aws-training"
+  #      ServiceName = "${var.serviceName}"
+  #    }
+  #  }
+  #}
 }
 
 resource "aws_iam_role" "pipeline" {
@@ -94,6 +113,11 @@ resource "aws_iam_role_policy_attachment" "CPL_S3FullAccess" {
 resource "aws_iam_role_policy_attachment" "CPL_ECRPowerUser" {
   role       = "${aws_iam_role.pipeline.id}"
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+}
+
+resource "aws_iam_role_policy_attachment" "CPL_ECRFullAccess" {
+  role       = "${aws_iam_role.pipeline.id}"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonECS_FullAccess"
 }
 
 # Code Build
@@ -179,6 +203,11 @@ phases:
       - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$ver .
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$ver
+#  post_build:
+#    commands:
+#      - echo "[{\"name\":\"webapp\",\"imageUri\":\"$${REPOSITORY_URI}:$ver\"}]" > imagedefinitions.json
+#artifacts:
+#  files: imagedefinitions.json
 EOF
   }
 }

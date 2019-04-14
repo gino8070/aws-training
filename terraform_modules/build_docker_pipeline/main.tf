@@ -1,15 +1,18 @@
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
 resource "aws_s3_bucket" "artifact_store" {
-  bucket = "${var.name}_fajklduvlzfej1k234j38u1j"
+  bucket = "${replace(var.name, ".", "")}-fajklduvlzfej1k234j38u1j"
   acl    = "private"
 }
 
 # Code Pipeline
 resource "aws_codepipeline" "main" {
-  name     = "${replace(var.name, ".", "")}_build_docker_pipeline"
+  name     = "${var.name}_build_docker_pipeline"
   role_arn = "${aws_iam_role.pipeline.arn}"
 
   artifact_store {
-    location = "${aws_s3_bucket.artifact_store.name}"
+    location = "${aws_s3_bucket.artifact_store.id}"
     type     = "S3"
   }
 
@@ -21,7 +24,7 @@ resource "aws_codepipeline" "main" {
       category         = "Source"
       owner            = "AWS"
       version          = "1"
-      providor         = "CodeCommit"
+      provider         = "CodeCommit"
       output_artifacts = ["commited_data"]
 
       configuration {
@@ -68,9 +71,29 @@ resource "aws_iam_role" "pipeline" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "CodePipelineFullAccess" {
+resource "aws_iam_role_policy_attachment" "CPL_CodePipelineFullAccess" {
   role       = "${aws_iam_role.pipeline.id}"
   policy_arn = "arn:aws:iam::aws:policy/AWSCodePipelineFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "CPL_CodeCommitFullAccess" {
+  role       = "${aws_iam_role.pipeline.id}"
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodeCommitFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "CPL_CodeBuildAdminAccess" {
+  role       = "${aws_iam_role.pipeline.id}"
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "CPL_S3FullAccess" {
+  role       = "${aws_iam_role.pipeline.id}"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "CPL_ECRPowerUser" {
+  role       = "${aws_iam_role.pipeline.id}"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
 # Code Build
@@ -93,13 +116,28 @@ resource "aws_iam_role" "build" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "CodeBuildAdminAccess" {
-  role       = "${aws_iam_role.pipeline.id}"
+resource "aws_iam_role_policy_attachment" "CB_CodeBuildAdminAccess" {
+  role       = "${aws_iam_role.build.id}"
   policy_arn = "arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess"
 }
 
+resource "aws_iam_role_policy_attachment" "CB_CloudWatchLogsFullAccess" {
+  role       = "${aws_iam_role.build.id}"
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "CB_S3FullAccess" {
+  role       = "${aws_iam_role.build.id}"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "CB_ECRPowerUser" {
+  role       = "${aws_iam_role.build.id}"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+}
+
 resource "aws_codebuild_project" "build_docker" {
-  name          = "${var.name}_build_docker"
+  name          = "${replace(var.name, ".", "")}_build_docker_project"
   description   = "${var.name}_build_docker"
   build_timeout = "10"
   service_role  = "${aws_iam_role.build.arn}"
@@ -113,6 +151,11 @@ resource "aws_codebuild_project" "build_docker" {
     image           = "aws/codebuild/docker:17.09.0"
     type            = "LINUX_CONTAINER"
     privileged_mode = true
+
+    environment_variable {
+      "name"  = "REPOSITORY_URI"
+      "value" = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com/${var.repoName}"
+    }
   }
 
   source {
@@ -127,12 +170,15 @@ phases:
       - aws --version
       - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
       - echo docker pull $REPOSITORY_URI:latest
-      - docker pull $REPOSITORY_URI:latest || true
+      # - docker pull $REPOSITORY_URI:latest || true
   build:
     commands:
       - echo Build started on `date`
-      - docker build --cache-from $REPOSITORY_URI:latest -t $REPOSITORY_URI:latest .
+      - ver=$(date "+%s")
+      # - docker build --cache-from $REPOSITORY_URI:latest -t $REPOSITORY_URI:latest .
+      - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$ver .
       - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$ver
 EOF
   }
 }

@@ -1,3 +1,7 @@
+# Caution
+
+ALBの作成やECSクラスターの作成などは省略しています
+
 # Setup Cloud9
   - Create Environment
     - Name
@@ -144,7 +148,7 @@
       - Cluster
         - aws-training
       - ServiceName
-        - myname-service
+        - myname
       - ServiceType
         - Replica
       - Task Num
@@ -170,8 +174,22 @@
   - ECSクラスターでDockerImageが実行されている状態
   - HAな検証も行う
 
+# Update Sample app
+	- cd ~/environment/$MY_NAME
+  - sed -e 's/Ok/Hello World/g' -i main.go
+  - docker build -t $MY_NAME:v2.0 .
+	- docker run --rm -p 8080:8080 $MY_NAME:v2.0
+  - git add -A
+  - git commit -m 'v2'
+  - git push origin master
+  
+
 # Build Docker Pipeline
 	- cd ~/environment/aws-training/terraform/build_docker_pipeline
 	- terraform init
-	- terraform plan --var "name=$MY_NAME" --var "repoName=$MY_NAME" --var "branchName=master"
-	- terraform apply --var "name=$MY_NAME" --var "repoName=$MY_NAME" --var "branchName=master"
+  - terraform plan -var "name=$MY_NAME" -var "repoName=$MY_NAME" -var "branchName=master" -var "serviceName=$MY_NAME"
+  - terraform apply -var "name=$MY_NAME" -var "repoName=$MY_NAME" -var "branchName=master" -var "serviceName=$MY_NAME"
+
+# 動作検証
+  - ローカルPCからALBのIP:HostPortへアクセスする
+  - 無停止デプロイなことを検証

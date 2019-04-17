@@ -52,23 +52,23 @@ resource "aws_codepipeline" "main" {
     }
   }
 
-  #stage {
-  #  name = "DeployECS"
+  stage {
+    name = "DeployECS"
 
-  #  action {
-  #    name            = "Deploy"
-  #    category        = "Deploy"
-  #    owner           = "AWS"
-  #    provider        = "ECS"
-  #    version         = "1"
-  #    input_artifacts = ["builded_data"]
+    action {
+      name            = "Deploy"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "ECS"
+      version         = "1"
+      input_artifacts = ["builded_data"]
 
-  #    configuration {
-  #      ClusterName = "aws-training"
-  #      ServiceName = "${var.serviceName}"
-  #    }
-  #  }
-  #}
+      configuration {
+        ClusterName = "aws-training"
+        ServiceName = "${var.serviceName}"
+      }
+    }
+  }
 }
 
 resource "aws_iam_role" "pipeline" {
@@ -203,11 +203,11 @@ phases:
       - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$ver .
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$ver
-#  post_build:
-#    commands:
-#      - echo "[{\"name\":\"webapp\",\"imageUri\":\"$${REPOSITORY_URI}:$ver\"}]" > imagedefinitions.json
-#artifacts:
-#  files: imagedefinitions.json
+  post_build:
+    commands:
+      - echo "[{\"name\":\"webapp\",\"imageUri\":\"$${REPOSITORY_URI}:$ver\"}]" > imagedefinitions.json
+artifacts:
+  files: imagedefinitions.json
 EOF
   }
 }

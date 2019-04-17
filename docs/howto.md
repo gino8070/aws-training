@@ -79,6 +79,96 @@
 	- terraform init
 	- terraform plan --var "name=$MY_NAME"
 	- terraform apply --var "name=$MY_NAME"
+  - ECR_URL=$(terraform show | grep repository_url | sed -e 's/.* = //g')
+
+# Push to ECR
+  - $(aws ecr get-login --no-include-email --region ap-northeast-1)
+  - cd ~/environment/$MY_NAME
+  - docker build -t $MY_NAME .
+  - docker tag $MY_NAME:latest $ECR_URL:v1.0
+  - docker push $ECR_URL:v1.0
+
+# Create ECS Task
+  - ECS -> Task Definitions
+    - Create New task
+      - EC2
+        - Name
+          - myname
+        - Role
+          - ecsTaskExecutionRole
+        - Network
+          - bridge
+        - TaskExecRole
+          - EcsTaskExecutionRole
+        - Memory
+          - 64
+        - CPU
+          - 128
+        - Container Def
+          - Name
+            - webapp
+          - Image
+            - repository-url/tag
+        - Port Mapping
+          - Host Port
+            - nnn
+          - Container Port
+            - 8080
+  - ECS -> Cluster aws-traing
+    - task
+      - execute new task
+        - type
+          - EC2
+        - Task Def
+          - myname
+        - cluster
+          - aws-training
+        - task num
+          - 1
+
+# 動作検証
+  - ローカルPCからEC2のIP:HostPortへアクセスする
+  - ECSクラスターでDockerImageが実行されている状態
+  - NonHAな検証も行う
+
+# Prepareing
+  - EC2クラスター増設
+
+# Create ECS Service
+  - ECS -> Cluster aws-traing
+    - Service
+      - Type
+        - EC2
+      - Task Def
+        - myname
+      - Cluster
+        - aws-training
+      - ServiceName
+        - myname-service
+      - ServiceType
+        - Replica
+      - Task Num
+        - 2
+      - Min Health
+        - 100
+      - Max Health
+        - 200
+      - ELB
+        - ALB
+      - Role
+        - AWSServiceRoleForECS
+      - ELBName
+        - aws-training
+      - Container
+        - Listenerport
+          - nnnn
+      - Servie検出
+        - Off
+        
+# 動作検証
+  - ローカルPCからALBのIP:HostPortへアクセスする
+  - ECSクラスターでDockerImageが実行されている状態
+  - HAな検証も行う
 
 # Build Docker Pipeline
 	- cd ~/environment/aws-training/terraform/build_docker_pipeline

@@ -3,6 +3,8 @@
 ALBの作成やECSクラスターの作成などは省略しています
 
 # Setup Cloud9
+
+コンソール操作
   - Create Environment
     - Name
       - yourname
@@ -31,68 +33,109 @@ ALBの作成やECSクラスターの作成などは省略しています
 以降はCloud9のTerminalでの操作
 
 # Common Setting
-	- MY_NAME=gino8070
+
+```bash
+MY_NAME=gino8070
+```
 
 # Install Tools
-	- sudo yum install -y jq
-	- wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
-	- unzip terraform_0.11.13_linux_amd64.zip
-	- chmod +x terraform
-	- mkdir ~/bin
-	- mv terraform ~/bin/
+
+```bash
+sudo yum install -y jq
+wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
+unzip terraform_0.11.13_linux_amd64.zip
+chmod +x terraform
+mkdir ~/bin
+mv terraform ~/bin/
+```
 
 # Clone github repo
-	- git clone https://github.com/gino8070/aws-training.git
+
+```bash
+git clone https://github.com/gino8070/aws-training.git
+```
 
 # Code Commit
-	- cd ~/environment/aws-training/terraform/code_commit
-  - terraform init
-	- terraform plan --var "name=$MY_NAME"
-	- terraform apply --var "name=$MY_NAME"
+
+```bash
+cd ~/environment/aws-training/terraform/code_commit
+terraform init
+terraform plan --var "name=$MY_NAME"
+terraform apply --var "name=$MY_NAME"
+```
 
 # Setting git config
-	- git config --global credential.helper '!aws codecommit credential-helper $@'
-	- git config --global credential.UseHttpPath true
-	- git config --global user.email ""
-	- git config --global user.name "${MY_NAME}"
+
+```bash
+git config --global credential.helper '!aws codecommit credential-helper $@'
+git config --global credential.UseHttpPath true
+git config --global user.email ""
+git config --global user.name "${MY_NAME}"
+```
 
 # Clone code commit repo
-	- cd ~/environment
-	- MY_REPO=$(aws codecommit get-repository --repository-name ${MY_NAME} --region ap-northeast-1 | jq -r .repositoryMetadata.cloneUrlHttp)
-	- git clone $MY_REPO
+
+```bash
+cd ~/environment
+MY_REPO=$(aws codecommit get-repository --repository-name ${MY_NAME} --region ap-northeast-1 | jq -r .repositoryMetadata.cloneUrlHttp)
+git clone $MY_REPO
+```
 
 # First commit
-	- cd $MY_NAME
-	- cp ../aws-training/app/* .
-	- cp ../aws-training/.gitignore .
-  - git add -A
-  - git commit -m 'first commit'
-  - git push origin master
+
+```bash
+cd $MY_NAME
+cp ../aws-training/app/* .
+cp ../aws-training/.gitignore .
+git add -A
+git commit -m 'first commit'
+git push origin master
+```
 	
 # Run sample app
-	- docker build -t sample_app:v1 .
-	- docker run --rm -p 8080:8080 sample_app:v1
-	- curl localhost:8080
+
+```bash
+docker build -t sample_app:v1 .
+docker run --rm -p 8080:8080 sample_app:v1
+curl localhost:8080
+```
 
 # Access from local PC
-  - curl 169.254.169.254/latest/meta-data/public-ipv4
-  - ブラウザで http://IP:8080 へアクセス
+
+```bash
+# @c9
+curl 169.254.169.254/latest/meta-data/public-ipv4
+
+# @Local
+curl http://PUBLIC_IP:8080
+# or ブラウザで http://PUBLIC_IP:8080 へアクセス
+```
+
 
 # Terraform ECR
-	- cd ~/environment/aws-training/terraform/ecr
-	- terraform init
-	- terraform plan --var "name=$MY_NAME"
-	- terraform apply --var "name=$MY_NAME"
-  - ECR_URL=$(terraform show | grep repository_url | sed -e 's/.* = //g')
+
+```bash
+cd ~/environment/aws-training/terraform/ecr
+terraform init
+terraform plan --var "name=$MY_NAME"
+terraform apply --var "name=$MY_NAME"
+ECR_URL=$(terraform show | grep repository_url | sed -e 's/.* = //g')
+```
 
 # Push to ECR
-  - $(aws ecr get-login --no-include-email --region ap-northeast-1)
-  - cd ~/environment/$MY_NAME
-  - docker build -t $MY_NAME .
-  - docker tag $MY_NAME:latest $ECR_URL:v1.0
-  - docker push $ECR_URL:v1.0
+
+```bash
+cd ~/environment/aws-training/terraform/ecr
+$(aws ecr get-login --no-include-email --region ap-northeast-1)
+cd ~/environment/$MY_NAME
+docker build -t $MY_NAME .
+docker tag $MY_NAME:latest $ECR_URL:v1.0
+docker push $ECR_URL:v1.0
+```
 
 # Create ECS Task
+
+コンソール操作
   - ECS -> Task Definitions
     - Create New task
       - EC2
@@ -131,14 +174,26 @@ ALBの作成やECSクラスターの作成などは省略しています
           - 1
 
 # 動作検証
-  - ローカルPCからEC2のIP:HostPortへアクセスする
-  - ECSクラスターでDockerImageが実行されている状態
-  - NonHAな検証も行う
+
+```bash
+# @c9
+curl 169.254.169.254/latest/meta-data/public-ipv4
+
+# @Local
+curl http://PUBLIC_IP:8080
+# or ブラウザで http://PUBLIC_IP:8080 へアクセス
+# ECSクラスターでDockerImageが実行されている状態
+# NonHAな検証も行う
+```
 
 # Prepareing
+
+コンソール操作
   - EC2クラスター増設
 
 # Create ECS Service
+
+コンソール操作
   - ECS -> Cluster aws-traing
     - Service
       - Type
@@ -170,26 +225,48 @@ ALBの作成やECSクラスターの作成などは省略しています
         - Off
         
 # 動作検証
-  - ローカルPCからALBのIP:HostPortへアクセスする
-  - ECSクラスターでDockerImageが実行されている状態
-  - HAな検証も行う
+
+```bash
+# @c9
+curl 169.254.169.254/latest/meta-data/public-ipv4
+
+# @Local
+curl http://PUBLIC_IP:8080
+# or ブラウザで http://PUBLIC_IP:8080 へアクセス
+# ECSクラスターでDockerImageが実行されている状態
+# HAな検証も行う
+```
 
 # Update Sample app
-	- cd ~/environment/$MY_NAME
-  - sed -e 's/Ok/Hello World/g' -i main.go
-  - docker build -t $MY_NAME:v2.0 .
-	- docker run --rm -p 8080:8080 $MY_NAME:v2.0
-  - git add -A
-  - git commit -m 'v2'
-  - git push origin master
-  
+
+```bash
+cd ~/environment/$MY_NAME
+sed -e 's/Ok/Hello World/g' -i main.go
+docker build -t $MY_NAME:v2.0 .
+docker run --rm -p 8080:8080 $MY_NAME:v2.0
+git add -A
+git commit -m 'v2'
+git push origin master
+```
 
 # Build Docker Pipeline
-	- cd ~/environment/aws-training/terraform/build_docker_pipeline
-	- terraform init
-  - terraform plan -var "name=$MY_NAME" -var "repoName=$MY_NAME" -var "branchName=master" -var "serviceName=$MY_NAME"
-  - terraform apply -var "name=$MY_NAME" -var "repoName=$MY_NAME" -var "branchName=master" -var "serviceName=$MY_NAME"
+
+```bash
+cd ~/environment/aws-training/terraform/build_docker_pipeline
+terraform init
+terraform plan -var "name=$MY_NAME" -var "repoName=$MY_NAME" -var "branchName=master" -var "serviceName=$MY_NAME"
+terraform apply -var "name=$MY_NAME" -var "repoName=$MY_NAME" -var "branchName=master" -var "serviceName=$MY_NAME"
+```
 
 # 動作検証
-  - ローカルPCからALBのIP:HostPortへアクセスする
-  - 無停止デプロイなことを検証
+
+```bash
+# @c9
+curl 169.254.169.254/latest/meta-data/public-ipv4
+
+# @Local
+curl http://PUBLIC_IP:8080
+# or ブラウザで http://PUBLIC_IP:8080 へアクセス
+# ECSクラスターでDockerImageが実行されている状態
+# 無停止なデプロイである検証も行う
+```
